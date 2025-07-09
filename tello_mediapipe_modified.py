@@ -21,23 +21,27 @@ device = 0 # cuda device, i.e. 0 or 0,1,2,3 or cpu
 imgsz=(640, 640)
 
 
-# Global variable to signal movements
-signal_takeoff=False
-signal_up = False
-signal_down=False
-signal_left=False
-signal_right=False
-signal_land=False
-signal_picture=False
-signal_backward=False
-signal_forward=False
-is_rotating_clockwise = False
-is_rotating_counter_clockwise = False
-cmd = "_"
+class DroneState:
+    def __init__(self):
+        # Signal movements
+        self.signal_takeoff = False
+        self.signal_up = False
+        self.signal_down = False
+        self.signal_left = False
+        self.signal_right = False
+        self.signal_land = False
+        self.signal_picture = False
+        self.signal_backward = False
+        self.signal_forward = False
+        self.is_rotating_clockwise = False
+        self.is_rotating_counter_clockwise = False
+        self.cmd = "_"
+        self.original_frame = None
+        self.start_time = time.time()
+        self.person = '-'
+        self.is_authenticated = True
 
-original_frame = None
-start_time = time.time()
-
+drone_state = DroneState()
 
 """Pygame"""
 pygame.init()
@@ -45,8 +49,6 @@ screen_width = 960
 screen_height = 720
 window = pygame.display.set_mode((screen_width,screen_height))
 IMAGE_DIR = './assets/'
-person = '-'
-is_authenticated = True
 
 """Countdown"""
 picture_counter = -1
