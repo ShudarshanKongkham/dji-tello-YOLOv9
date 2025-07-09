@@ -16,6 +16,13 @@ from FaceRecognitionC import identify_user
 import pickle
 pygame.init()
 
+
+NUMBERS ={
+          '0':'rr0000rrr0rrrr0r0rrrrrr00r0rr0r0rrrrrrrrr0rrrr0rrr0000rr0rrrrrr0',
+          '1':"0000r00000rrr00000r0r0000000r0000000r0000000r0000000r0000rrrrrr0",
+          '2':'0rrrrr000r000r0000000r000000r000000r000000r000000r000r000rrrrr00',
+          '3':'0rrrrr000r000r0000000r000000r0000000r00000000r000r000r000rrrrr00'}
+
 def load_model(weights,device,imgsz):
     # Load model
     device = select_device(device)
@@ -44,8 +51,8 @@ face_mesh = mp_face_mesh.FaceMesh()
 mp_hands = mp.solutions.hands
 hands = mp_hands.Hands()
 
+with open('core_embeddings.pkl', 'rb') as f:
 # with open('embeddings.pkl', 'rb') as f:
-with open('embeddings.pkl', 'rb') as f:
     FaceEmbeddings = loaded_embeddings_dict = pickle.load(f)
 
 FaceEncodings= FaceEmbeddings["FaceEmbeddings_new"]
@@ -151,12 +158,10 @@ flashing = False
 # Create a surface for the flashing effect
 flash_surface = pygame.Surface((screen_width, screen_height))
 flash_surface.fill((255, 255, 255))  # White flash
-flash_surface.set_alpha(0)  # Start with fully transparent
 
 # Set up flashing parameters
-flash_duration = 2.0  # Total duration of the flash effect in seconds
-half_flash_duration = flash_duration / 2
-time_elapsed = 0
+flash_duration = 1.0  # Total duration of the flash effect in seconds
+flash_time= 0
 
 def draw_outlined_text(image, text, position, font, font_scale, color, thickness, outline_color, outline_thickness):
     image = cv2.putText(image, text, position, font, font_scale, outline_color, outline_thickness, lineType=cv2.LINE_AA)
@@ -239,9 +244,10 @@ def picture_countdown_completed():
     if current_time - countdown_started_time >= 1:
         countdown_started_time = time.time()
         picture_counter -= 1
+        number_to_show=NUMBERS[str(picture_counter)]
+        
+        my_drone.send_expansion_command(f"mled sg {number_to_show}")
         if picture_counter <= 0:
-            picture_counter = -1
-            countdown_started_time = None
             return True, True # Finished, there is a countdown
         return False, True # Not finished, there is a countdown
     
@@ -387,29 +393,16 @@ def get_frame():
                 
                 countdown_finished, countdown = picture_countdown_completed()
                 if countdown and picture_counter >= 0:
-                    
-                    image = draw_outlined_text(image, f'{int(picture_counter)}', (int(screen_width/2)-50, int(screen_height/2)-50), cv2.FONT_HERSHEY_SIMPLEX, 5, (0, 0, 0), 2, (255, 255, 255), 8)
+                    print(countdown, countdown_finished)
+                    image = draw_outlined_text(image, f'{int(picture_counter)}', (int(screen_width/2)-45, int(screen_height/2)+35), cv2.FONT_HERSHEY_SIMPLEX, 5, (0, 0, 0), 6, (255, 255, 255), 10)
                     if countdown_finished:
+                        picture_counter = -1
+                        countdown_started_time = None
                         flashing = countdown_finished
-                
-                if flashing:
-                    last_flash_time = time.time()
-                    # Calculate time elapsed since start of flash
-                    dt = clock.tick(60) / 1000.0
-                    time_elapsed += dt
-            
-                    if time_elapsed <= half_flash_duration:
-                        # Increase opacity
-                        alpha = int((time_elapsed / half_flash_duration) * 255)
-                    elif time_elapsed <= flash_duration:
-                        # Decrease opacity
-                        alpha = int(((flash_duration - time_elapsed) / half_flash_duration) * 255)
-                    else:
-                        flash_completed = True
-                        alpha = 0
-            
-                    flash_surface.set_alpha(alpha)
-                    window.blit(flash_surface, (0, 0))
+                        flash_time = time.time()
+                        
+                        frame_RGB=cv2.cvtColor(original_frame, cv2.COLOR_BGR2RGB)
+                        cv2.imwrite(f'./pictures/image_{i}_{current_time}.jpg', frame_RGB)
                         
                 frame_surface = pygame.surfarray.make_surface(image.swapaxes(0, 1))
                 
@@ -417,6 +410,13 @@ def get_frame():
                 # Blit and display
                 window.blit(frame_surface, (0, 0))
                 window.blit(frame_image, (0, 0))
+                
+                if flashing:
+                    current_time = time.time()
+                    if current_time - flash_time <= flash_duration:  
+                        window.blit(flash_surface, (0, 0))
+                    else:
+                        flashing = False
                 
                 current_time_pygame = pygame.time.get_ticks()
                 
@@ -465,8 +465,6 @@ def get_frame():
                             signal_left = True
                             cmd = "Move RIGHT"
                         elif class_action == 'picture':
-                            frame_RGB=cv2.cvtColor(original_frame, cv2.COLOR_BGR2RGB)
-                            # cv2.imwrite(f'./pictures/image_{i}_{current_time}.jpg', frame_RGB)
                             picture_counter = 4
                             countdown_started_time = time.time()
                             print("TAKING PICTURE")
@@ -506,11 +504,9 @@ def get_frame():
                              signal_right = True
                              cmd = "Move RIGHT"
                          elif event.key == pygame.K_p:
-                             frame_RGB=cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                              picture_counter = 4
                              countdown_started_time = time.time()
                              print("TAKING PICTURE")
-                             # cv2.imwrite(f'./pictures/image_{i}_{current_time}.jpg', frame_RGB)
                              i += 1
                              signal_picture = True
                              cmd = "Take PICTURE"
@@ -551,10 +547,8 @@ def get_frame():
                                      signal_right = True
                                      cmd = "Move RIGHT"
                                  elif i == 4:
-                                     frame_RGB=cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                                      picture_counter = 4
                                      countdown_started_time = time.time()
-                                     # cv2.imwrite(f'./pictures/image_{i}_{current_time}.jpg', frame_RGB)
                                      i += 1
                                      signal_picture = True
                                      cmd = "Take PICTURE"
@@ -623,49 +617,65 @@ def control_drone():
                 cmd = "_"
             if signal_takeoff:
                 print('Drone take off')
-                my_drone.send_expansion_command("mled l g 1.5 GESTURE FLY")
+                led_take_off = "00000000000rr00000r00r000r0000r0r00rr00r00r00r000r0000r0r000000r"
+                # my_drone.send_expansion_command("mled l g 1.5 GESTURE FLY")
+                my_drone.send_expansion_command(f"mled u g 1.5 {led_take_off}")
                 my_drone.takeoff()
                 signal_takeoff = False
                 cmd = "_"
             if signal_up:
                 print('Drone up')
-                my_drone.send_expansion_command("mled u r 1.5 UP")
+                led_up = "000r000000rrr0000r0r0r00r00r00r0000r0000000r0000000r000000000000"
+                # my_drone.send_expansion_command("mled u r 1.5 UP")
+                my_drone.send_expansion_command(f"mled u g 1.5 {led_up}")
                 my_drone.move_up(20)
                 signal_up = False
                 cmd = "_"
             if signal_down:
                 print('Drone down')
-                my_drone.send_expansion_command("mled d r 1.5 DOWN")
+                led_down = "r0000000000r0000000r0000000r0000r00r00r00r0r0r0000rrr000000r0000"
+                # my_drone.send_expansion_command("mled d r 1.5 DOWN")
+                my_drone.send_expansion_command(f"mled d g 1.5 {led_down}")
                 my_drone.move_down(20)
                 signal_down = False
                 cmd = "_"
             if signal_left:
                 print('Drone left')
-                my_drone.send_expansion_command("mled r r 1.5 RIGHT")
+                led_right = "000000000000r00000000r00000000r00rrrrrrr000000r000000r000000r000"
+                # my_drone.send_expansion_command("mled r r 1.5 RIGHT")
+                my_drone.send_expansion_command(f"mled r g 1.5 {led_right}")
                 my_drone.move_left(20)
                 signal_left = False
                 cmd = "_"
             if signal_right:
                 print('Drone right')
-                my_drone.send_expansion_command("mled l r 1.5 LEFT")
+                led_left = "00000000000r000000r000000r000000rrrrrrr00r00000000r00000000r0000"
+                # my_drone.send_expansion_command("mled l r 1.5 LEFT")
+                my_drone.send_expansion_command(f"mled l g 1.5 {led_left}")
                 my_drone.move_right(20)
                 signal_right = False
                 cmd = "_"
             if signal_backward:
                 print('Drone back')
-                my_drone.send_expansion_command("mled l r 1.5 BACK")
+                led_back = "rrr00000r0r00r000r0000r0rrr0000r0r0r00r00r000r00r0r00000r0rr0000"
+                # my_drone.send_expansion_command("mled l r 1.5 BACK")
+                my_drone.send_expansion_command(f"mled sg {led_back}")
                 my_drone.move_back(20)
                 signal_backward = False
                 cmd = "_"
             if signal_forward:
                 print('Drone forward')
-                my_drone.send_expansion_command("mled l r 1.5 FORWARD")
+                led_forward = "rrr00000r0r0000r0r0000r0rrr00r000r0r00r00r00000rr0r00000r0rr0000"
+                # my_drone.send_expansion_command("mled l r 1.5 FORWARD")
+                my_drone.send_expansion_command(f"mled sg {led_forward}")
                 my_drone.move_forward(20)
                 signal_forward = False
                 cmd = "_"
             if signal_land:
                 print('Drone land')
-                my_drone.send_expansion_command("mled l r 1.5 LANDING")
+                led_land = "r000000r0r0000r000r00r00000rr000r000000r0r0000r000r00r00000rr000"
+                # my_drone.send_expansion_command("mled l r 1.5 LANDING")
+                my_drone.send_expansion_command(f"mled sg {led_land}")
                 my_drone.land()
                 signal_land = False
                 cmd = "_"

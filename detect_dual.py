@@ -1,3 +1,5 @@
+
+
 from pathlib import Path
 import numpy as np
 import torch
@@ -142,7 +144,7 @@ def run(
     window = pygame.display.set_mode((960,720))
     threshold = 10
     previous_predicted_class = []
-    classes_counter = {'left':0,'right':0,'up':0,'down':0,'backward':0,'forward':0,'land':0,'picture':0}
+    classes_counter = {'left':0,'right':0,'up':0,'down':0,'v9_c_best.pt':0,'forward':0,'land':0,'picture':0}
     with mp_face_mesh.FaceMesh(min_detection_confidence=0.5, min_tracking_confidence=0.5) as face_mesh, \
      mp_hands.Hands(min_detection_confidence=0.3, min_tracking_confidence=0.3) as hands:
         while True:
@@ -153,7 +155,7 @@ def run(
                 face_results = face_mesh.process(aux_image)
                 hand_results = hands.process(aux_image)
                 _ , regions = draw_face_and_hands(aux_image, face_results.multi_face_landmarks, hand_results.multi_hand_landmarks)
-                # frame = apply_blur_except_regions(frame, regions)
+                frame = apply_blur_except_regions(frame, regions)
 
                 predicted_classes,im0=inference(frame,model,names,line_thickness)
                 frame_surface = pygame.surfarray.make_surface(im0.swapaxes(0, 1))
@@ -175,10 +177,12 @@ def run(
                         classes_counter = {'left':0,'right':0,'up':0,'down':0,'backward':0,'forward':0,'land':0,'picture':0}
 
                     previous_predicted_class=highest_prob_class[0] 
-                # This additional sleep call ensures the loop is not running too fast
-                # pygame.time.wait(10)
-                cv2.waitKey(10)
-       
+
+
+
+            
+
+
 
 
 if __name__ == "__main__":

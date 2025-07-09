@@ -46,7 +46,7 @@ screen_height = 720
 window = pygame.display.set_mode((screen_width,screen_height))
 IMAGE_DIR = './assets/'
 person = '-'
-is_authenticated = True
+is_authenticated = False
 
 """Countdown"""
 picture_counter = -1
@@ -99,9 +99,9 @@ def picture_countdown_completed():
     if current_time - countdown_started_time >= 1:
         countdown_started_time = time.time()
         picture_counter -= 1
-        # number_to_show=NUMBERS[str(picture_counter)]
-        # my_drone.send_expansion_command(f"mled sg {number_to_show}")
+        number_to_show=NUMBERS[str(picture_counter)]
         
+        my_drone.send_expansion_command(f"mled sg {number_to_show}")
         if picture_counter <= 0:
             return True, True # Finished, there is a countdown
         return False, True # Not finished, there is a countdown
@@ -264,6 +264,7 @@ def perform_face_recognition(original_frame):
             
 
 def control_drone():
+
     global signal_takeoff
     global signal_up 
     global signal_down
@@ -279,71 +280,120 @@ def control_drone():
     global start_time
     global is_authenticated
     global person
+    global signal_picture
+    #my_drone.send_expansion_command("mled sc")
     
+    command_1_sent=False
+    command_2_sent=False
     while True:
-        # ret, frame = cap.read()
-        # # frame=my_drone.get_frame_read().frame
-        # # ret = True
-        # if ret:
-        #     original_frame = frame.copy() 
         perform_face_recognition(original_frame)
         if(is_authenticated):
+            
+            if(not command_1_sent):
+                my_drone.send_expansion_command("led bl 0.5 0 255 0 0 255 0")
+                my_drone.send_expansion_command("mled sg 00rrrr000r0000r0r0r00r0rr000000rr0r00r0rr00rr00r0r0000r000rrrr00")
+                command_2_sent = False
+                command_1_sent = True
+                
+            if signal_picture:
+                print('Drone led')
+                #my_drone.send_expansion_command("mled l r 1.5 PICTURE")
+                
+            
+                #my_drone.send_expansion_command("mled sg 00rrrr000r0000r0r0r00r0rr000000rr0r00r0rr00rr00r0r0000r000rrrr00")
+               
+                
+                my_drone.send_expansion_command("led bl 0.5 255 0 255 0 0 255")
+                
+                #my_drone.send_expansion_command("mled sc") 
+                signal_picture = False
+                cmd = "_"
             if signal_takeoff:
                 print('Drone take off')
+                led_take_off = "00000000000rr00000r00r000r0000r0r00rr00r00r00r000r0000r0r000000r"
+                # my_drone.send_expansion_command("mled l g 1.5 GESTURE FLY")
+                my_drone.send_expansion_command(f"mled u g 1.5 {led_take_off}")
                 my_drone.takeoff()
                 signal_takeoff = False
                 cmd = "_"
             if signal_up:
                 print('Drone up')
+                led_up = "000r000000rrr0000r0r0r00r00r00r0000r0000000r0000000r000000000000"
+                # my_drone.send_expansion_command("mled u r 1.5 UP")
+                my_drone.send_expansion_command(f"mled u g 1.5 {led_up}")
                 my_drone.move_up(20)
                 signal_up = False
                 cmd = "_"
             if signal_down:
                 print('Drone down')
+                led_down = "r0000000000r0000000r0000000r0000r00r00r00r0r0r0000rrr000000r0000"
+                # my_drone.send_expansion_command("mled d r 1.5 DOWN")
+                my_drone.send_expansion_command(f"mled d g 1.5 {led_down}")
                 my_drone.move_down(20)
                 signal_down = False
                 cmd = "_"
             if signal_left:
                 print('Drone left')
+                led_right = "000000000000r00000000r00000000r00rrrrrrr000000r000000r000000r000"
+                # my_drone.send_expansion_command("mled r r 1.5 RIGHT")
+                my_drone.send_expansion_command(f"mled r g 1.5 {led_right}")
                 my_drone.move_left(20)
                 signal_left = False
                 cmd = "_"
             if signal_right:
                 print('Drone right')
+                led_left = "00000000000r000000r000000r000000rrrrrrr00r00000000r00000000r0000"
+                # my_drone.send_expansion_command("mled l r 1.5 LEFT")
+                my_drone.send_expansion_command(f"mled l g 1.5 {led_left}")
                 my_drone.move_right(20)
                 signal_right = False
                 cmd = "_"
             if signal_backward:
                 print('Drone back')
+                led_back = "rrr00000r0r00r000r0000r0rrr0000r0r0r00r00r000r00r0r00000r0rr0000"
+                # my_drone.send_expansion_command("mled l r 1.5 BACK")
+                my_drone.send_expansion_command(f"mled sg {led_back}")
                 my_drone.move_back(20)
                 signal_backward = False
                 cmd = "_"
             if signal_forward:
                 print('Drone forward')
+                led_forward = "rrr00000r0r0000r0r0000r0rrr00r000r0r00r00r00000rr0r00000r0rr0000"
+                # my_drone.send_expansion_command("mled l r 1.5 FORWARD")
+                my_drone.send_expansion_command(f"mled sg {led_forward}")
                 my_drone.move_forward(20)
                 signal_forward = False
                 cmd = "_"
             if signal_land:
                 print('Drone land')
+                led_land = "r000000r0r0000r000r00r00000rr000r000000r0r0000r000r00r00000rr000"
+                # my_drone.send_expansion_command("mled l r 1.5 LANDING")
+                my_drone.send_expansion_command(f"mled sg {led_land}")
                 my_drone.land()
                 signal_land = False
                 cmd = "_"
+
             if is_rotating_clockwise:
                 print('Drone is rotating clock-wise')
                 my_drone.rotate_clockwise(20)
                 is_rotating_clockwise = False
                 cmd = "_" 
             if is_rotating_counter_clockwise:
-                print('Drone is rotating counter clock-wise')
+                print('Drone is rotating clock-wise')
                 my_drone.rotate_counter_clockwise(20)
                 is_rotating_counter_clockwise= False
                 cmd = "_" 
         else:
+            if(not command_2_sent):
+                my_drone.send_expansion_command("led bl 0.5 255 0 0 254 0 0")
+                my_drone.send_expansion_command("mled sg 00rrrr000r0000r0r0r00r0rr000000rr00rr00rr0r00r0r0r0000r000rrrr00")
+                command_2_sent = True
+                command_1_sent = False
+                
             person = 'NOT AUTHENTICATED'
             cmd = "_" 
-        
+            
         time.sleep(0.1)  # Add a short delay to prevent this loop from consuming too much CPU
-
 
 """  .....  """
 
@@ -373,6 +423,7 @@ flying = False
 
 
 model,names,_=load_model(weights,device,imgsz)
+
 
 """PyGAME initialization/configuraiton"""
 # Text attributes for buttons
@@ -431,6 +482,12 @@ with mp_face_mesh.FaceMesh(min_detection_confidence=0.5, min_tracking_confidence
             face_results = face_mesh.process(image)
             hand_results = hands.process(image)
             
+            """ inferencing with yolo on 640x640 """
+            # frame = apply_blur_except_regions(frame, regions)
+            image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            predicted_classes,image = inference(image,model,names,line_thickness=3)
+            # cv2.imshow("Detection frame", im0)
+            
                         
             """ get the face coordinates from mediapipe """
             frame, face_center_x, face_center_y = draw_face_and_hands(image, face_results.multi_face_landmarks, hand_results.multi_hand_landmarks)
@@ -441,12 +498,7 @@ with mp_face_mesh.FaceMesh(min_detection_confidence=0.5, min_tracking_confidence
             frame_h, frame_w, _ = image.shape
             frame_center_x = frame_w // 2
             
-            """ inferencing with yolo on 640x640 """
-            # frame = apply_blur_except_regions(frame, regions)
-            image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            predicted_classes,image = inference(image,model,names,line_thickness=3)
-            # cv2.imshow("Detection frame", im0)
-        
+                    
             # Draw the center line of the frame
             # cv2.line(image, (frame_center_x, 0), (frame_center_x, frame_h), (255, 0, 0), 2)
             # cv2.line(image, (frame_center_x + 120, 0), (frame_center_x + 120, frame_h), (0, 0, 255), 2)
