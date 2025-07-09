@@ -408,7 +408,7 @@ click_alpha = 50   # More transparent on click
 click_effect_duration = 200  # Duration of the click effect in milliseconds
 last_click_time = 0  # Timestamp of the last click
 
-window = pygame.display.set_mode((960,720))
+# Removed duplicate Pygame display initialization to avoid redundancy.
 """"""
 
 threshold = 10
