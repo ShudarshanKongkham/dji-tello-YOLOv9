@@ -30,7 +30,7 @@ def take_picture():
         
         key = cv2.waitKey(1) & 0xFF
         if key == ord('p'):
-            for count in range(3, 0, -1):
+            for count in range(countdown_duration, 0, -1):
                 ret, frame = cap.read()
                 if not ret:
                     print("Failed to grab frame.")
