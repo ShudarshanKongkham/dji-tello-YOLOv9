@@ -52,7 +52,7 @@ Enhanced version with advanced visual feedback:
 | **👇 Down** | Move Down | Drone descends vertically |
 | **👈 Left** | Move Left | Drone moves left |
 | **👉 Right** | Move Right | Drone moves right |
-| **👋 Forward** | Move Forward | Drone moves forward |
+| **🤌 Forward** | Move Forward | Drone moves forward |
 | **🤚 Backward** | Move Backward | Drone moves backward |
 | **📷 Picture** | Take Photo | Initiates 4-second countdown and captures photo |
 | **🛬 Land** | Land | Emergency landing command |
